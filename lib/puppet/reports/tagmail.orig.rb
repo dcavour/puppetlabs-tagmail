@@ -74,8 +74,7 @@ Puppet::Reports.register_report(:tagmail) do
     taglists = []
     config_hash = {}
     file_hash = {}
-    datetime_hash = {}
-	
+
     input = input.split("\n")
     section = ''
     input.each do |value|
@@ -108,28 +107,12 @@ Puppet::Reports.register_report(:tagmail) do
       taglists = parse_tagmap(tagmap)
     end
 
-    if file_hash[:notification]
-      file_hash[:notification].each do |value|
-        array = value.split('=')
-        array.collect do |value|
-          value.strip!
-        end
-        datetime_hash[array[0].to_sym] = array[1]
-      end
-    end 
-
-    if file_hash[:excluded_nodes]
-	  config_hash[:excluded_nodes] = file_hash[:excluded_nodes]
-    end	
-	
-    config_hash = load_config_defaults(config_hash)
-    datetime_hash = load_datetime_defaults(datetime_hash)
-    config_hash.merge(datetime_hash)	
+    config_hash = load_defaults(config_hash)
     self.class.instance_variable_set(:@tagmail_conf, config_hash)
     taglists
   end
 
-  def load_config_defaults(config_hash)
+  def load_defaults(config_hash)
     if config_hash[:smtpserver]
       if not config_hash[:smtpport] or config_hash[:smtpport] == ''
         config_hash[:smtpport] = '25'
@@ -142,41 +125,13 @@ Puppet::Reports.register_report(:tagmail) do
 
     if not config_hash[:sendmail] or config_hash[:sendmail] == ''
         config_hash[:sendmail] = '/usr/sbin/sendmail'
-    end
+      end
 
     if not config_hash[:reportfrom] or config_hash[:reportfrom] == ''
       config_hash[:reportfrom] = 'Puppet Agent'
     end
 
     config_hash
-  end
-
-  def load_datetime_defaults(datetime_hash)
-    if not datetime_hash[:interval] or datetime_hash[:interval] == '' or datetime_hash[:interval].downcase == 'default'
-      datetime_hash[:interval] = '60'
-    end
-
-    if not datetime_hash[:minutes] or datetime_hash[:minutes] == '' or datetime_hash[:minutes].downcase == 'default'
-      datetime_hash[:minutes] = '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59'
-    end
-
-    if not datetime_hash[:hours] or datetime_hash[:hours] == '' or datetime_hash[:hours].downcase == 'default'
-      datetime_hash[:hours] = '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23'
-    end
-
-    if not datetime_hash[:weekdays] or datetime_hash[:weekdays] == '' or datetime_hash[:weekdays].downcase == 'default'
-      datetime_hash[:weekdays] = '0,1,2,3,4,5,6'
-    end
-
-    if not datetime_hash[:monthdays] or datetime_hash[:monthdays] == '' or datetime_hash[:monthdays].downcase == 'default'
-         datetime_hash[:monthdays] = '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31'
-    end
-
-    if not datetime_hash[:months] or datetime_hash[:months] == '' or datetime_hash[:months].downcase == 'default'
-      datetime_hash[:months] = '1,2,3,4,5,6,7,8,9,10,11,12'
-    end
-	
-    datetime_hash
   end
 
   # Load the config file
