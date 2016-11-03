@@ -75,6 +75,8 @@ Puppet::Reports.register_report(:tagmail) do
     config_hash = {}
     file_hash = {}
 	
+	config_hash[:] = true
+	
     input = input.split("\n")
     section = ''
     input.each do |value|
@@ -108,13 +110,13 @@ Puppet::Reports.register_report(:tagmail) do
     end
 
     if file_hash[:nodeconfig]
-	  puts "Processing [nodeconfig] section..."
+	  Puppet.notice "Processing [nodeconfig] section..."
       file_hash[:nodeconfig].each do |value|
         array = value.split(':')
         array.collect do |value|
           value.strip!
         end
-		puts "Found entry '#{array[0]}: #{array[1]}'"
+		Puppet.notice "Found node entry '#{array[0]}: #{array[1]}'"
         #datetime_hash[array[0].to_sym] = array[1]
       end
     end 
@@ -184,7 +186,10 @@ Puppet::Reports.register_report(:tagmail) do
 
   # Process the report.  This just calls the other associated messages.
   def process(tagmail_conf_file = "#{Puppet[:confdir]}/tagmail.conf")
-    unless Puppet::FileSystem.exist?(tagmail_conf_file)
+    
+	Puppet.notice "STARTING TAGMAIL FOR #{self.host}"
+	
+	unless Puppet::FileSystem.exist?(tagmail_conf_file)
       Puppet.notice "Cannot send tagmail report; no tagmap file #{tagmail_conf_file}"
       return
     end
@@ -204,6 +209,8 @@ Puppet::Reports.register_report(:tagmail) do
     reports = match(taglists)
 
     send(reports) unless reports.empty?
+
+	Puppet.notice "ENDING TAGMAIL FOR #{self.host}"	
   end
 
   # Send the email reports.
