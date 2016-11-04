@@ -110,19 +110,20 @@ Puppet::Reports.register_report(:tagmail) do
     end
 
     if file_hash[:nodeconfig]
-	  Puppet.notice "Processing [nodeconfig] section..."
+	  Puppet.info "Processing [nodeconfig] section..."
       file_hash[:nodeconfig].each do |value|
         array = value.split(':')
         array.collect do |value|
           value.strip!
         end
-		Puppet.notice "Found node entry '#{array[0]}: #{array[1]}'"
+		Puppet.info "Found node entry '#{array[0]}: #{array[1]}'"
         #datetime_hash[array[0].to_sym] = array[1]
       end
     end 
 	
     config_hash = load_defaults(config_hash)
     self.class.instance_variable_set(:@tagmail_conf, config_hash)
+	
     taglists
   end
 
