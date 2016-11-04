@@ -250,8 +250,8 @@ Puppet::Reports.register_report(:tagmail) do
               p.puts "Subject: Puppet Report for #{self.host}"
               p.puts "To: " + emails.join(", ")
               p.puts
-			  p.puts "*** TESTING NEW TAGMAIL CODE ***"
-			  p.puts
+              p.puts "** TESTING NEW TAGMAIL CODE **"
+              p.puts
               p.puts messages
             end
           end
