@@ -116,11 +116,15 @@ Puppet::Reports.register_report(:tagmail) do
         array.collect do |value|
           value.strip!
         end
-        if "#{self.host}" ==  "#{array[0]}"
-          Puppet.info "Tagmail rule found for #{array[0]}"
-        else
-          Puppet.info "Tagmail rule not found for #{array[0]}"        
-        end
+        
+        Puppet.info "self.host: #{self.host}"
+        Puppet.info "array[0]: #{array[0]}"
+        
+        #if "#{self.host}" ==  "#{array[0]}"
+        #  Puppet.info "Tagmail rule found for #{array[0]}"
+        #else
+        #  Puppet.info "Tagmail rule not found for #{array[0]}"        
+        #end
         #Puppet.info "Found node entry '#{array[0]}: #{array[1]}'"
         #datetime_hash[array[0].to_sym] = array[1]
       end
@@ -129,7 +133,7 @@ Puppet::Reports.register_report(:tagmail) do
     config_hash = load_defaults(config_hash)
     self.class.instance_variable_set(:@tagmail_conf, config_hash)
     
-    Puppet.info config_hash
+    #Puppet.info config_hash
 	
     taglists
   end
