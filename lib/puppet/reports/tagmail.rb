@@ -132,9 +132,7 @@ Puppet::Reports.register_report(:tagmail) do
 	
     config_hash = load_defaults(config_hash)
     self.class.instance_variable_set(:@tagmail_conf, config_hash)
-    
     #Puppet.info config_hash
-	
     taglists
   end
 
