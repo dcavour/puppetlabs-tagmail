@@ -117,7 +117,7 @@ Puppet::Reports.register_report(:tagmail) do
           value.strip!
         end
         
-        #Puppet.info "self.host: #{self.host}"
+        Puppet.info "self.host: #{self.host}"
         Puppet.info "array[0]: #{array[0]}"
         
         #if "#{self.host}" ==  "#{array[0]}"
