@@ -232,9 +232,9 @@ Puppet::Reports.register_report(:tagmail) do
                 p.puts "To: " + emails.join(", ")
                 p.puts "Date: #{Time.now.rfc2822}"
                 p.puts
-              p.puts "** TESTING NEW TAGMAIL CODE **"
-              p.puts
-              p.puts messages
+                p.puts "** TESTING NEW TAGMAIL CODE **"
+                p.puts
+                p.puts messages
               end
             end
           end
