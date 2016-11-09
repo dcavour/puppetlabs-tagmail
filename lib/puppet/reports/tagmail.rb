@@ -75,7 +75,7 @@ Puppet::Reports.register_report(:tagmail) do
     config_hash = {}
     file_hash = {}
 	
-	config_hash[:] = true
+	#config_hash[:] = true
 	
     input = input.split("\n")
     section = ''
@@ -116,7 +116,7 @@ Puppet::Reports.register_report(:tagmail) do
         array.collect do |value|
           value.strip!
         end
-		Puppet.info "Found node entry '#{array[0]}: #{array[1]}'"
+        Puppet.info "Found node entry '#{array[0]}: #{array[1]}'"
         #datetime_hash[array[0].to_sym] = array[1]
       end
     end 
