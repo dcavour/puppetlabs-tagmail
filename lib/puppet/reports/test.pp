@@ -1,3 +1,2 @@
 notify {'Hello World':,}
-notify {'THIS IS A TEST ERROR':, loglevel => 'err',} 
-
+notify {'THIS IS A TEST ERROR':, loglevel => 'err',}
