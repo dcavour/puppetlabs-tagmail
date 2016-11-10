@@ -75,8 +75,6 @@ Puppet::Reports.register_report(:tagmail) do
     config_hash = {}
     file_hash = {}
 	
-	#config_hash[:] = true
-	
     input = input.split("\n")
     section = ''
     input.each do |value|
@@ -118,7 +116,7 @@ Puppet::Reports.register_report(:tagmail) do
         end
 	  
         Puppet.info "array[0]: #{array[0]}"
-        Puppet.info "self.host: #{self.host}"
+        #Puppet.info "self.host: #{self.host}"
         
         #if "#{self.host}" ==  "#{array[0]}"
         #  Puppet.info "Tagmail rule found for #{array[0]}"
