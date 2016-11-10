@@ -116,9 +116,9 @@ Puppet::Reports.register_report(:tagmail) do
         array.collect do |value|
           value.strip!
         end
-        
-        Puppet.info "self.host: #{self.host}"
+	  
         Puppet.info "array[0]: #{array[0]}"
+        Puppet.info "self.host: #{self.host}"
         
         #if "#{self.host}" ==  "#{array[0]}"
         #  Puppet.info "Tagmail rule found for #{array[0]}"
