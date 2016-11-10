@@ -195,7 +195,7 @@ Puppet::Reports.register_report(:tagmail) do
   # Process the report.  This just calls the other associated messages.
   def process(tagmail_conf_file = "#{Puppet[:confdir]}/tagmail.conf")
     
-    Puppet.notice "STARTING TAGMAIL"
+    Puppet.notice "STARTING TAGMAIL (#{self.host})"
 	
     unless Puppet::FileSystem.exist?(tagmail_conf_file)
       Puppet.notice "Cannot send tagmail report; no tagmap file #{tagmail_conf_file}"
@@ -218,7 +218,7 @@ Puppet::Reports.register_report(:tagmail) do
 
     send(reports) unless reports.empty?
 
-    Puppet.notice "ENDING TAGMAIL"	
+    Puppet.notice "ENDING TAGMAIL (#{self.host})"	
   end
 
   # Send the email reports.
