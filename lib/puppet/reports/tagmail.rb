@@ -74,6 +74,8 @@ Puppet::Reports.register_report(:tagmail) do
     taglists = []
     config_hash = {}
     file_hash = {}
+
+    config_hash[:excludenode] = false
 	
     input = input.split("\n")
     section = ''
@@ -108,29 +110,26 @@ Puppet::Reports.register_report(:tagmail) do
     end
 
     if file_hash[:nodeconfig]
-      Puppet.info "Processing [nodeconfig] section..."
+      #Puppet.notice "Processing [nodeconfig] section..."
       file_hash[:nodeconfig].each do |value|
         array = value.split(':')
         array.collect do |value|
           value.strip!
         end
-	  
-        Puppet.info "array[0]: #{array[0]}"
-        #Puppet.info "self.host: #{self.host}"
-        
-        #if "#{self.host}" ==  "#{array[0]}"
-        #  Puppet.info "Tagmail rule found for #{array[0]}"
-        #else
-        #  Puppet.info "Tagmail rule not found for #{array[0]}"        
-        #end
-        #Puppet.info "Found node entry '#{array[0]}: #{array[1]}'"
-        #datetime_hash[array[0].to_sym] = array[1]
+        if self.host == array[0]
+          config_hash[:noderule] = array[1].to_s
+          if config_hash[:noderule] == '0' || config_hash[:noderule] == 'exclude' 
+            config_hash[:excludenode] = true
+          end
+          Puppet.notice "Tagmail rule found for #{array[0]} (#{config_hash[:noderule]})"
+          #Puppet.notice "Matching node found (#{array[0]})\r\nNode rule => #{config_hash[:noderule]}\r\nExclude node => #{config_hash[:excludenode]}"
+        end
       end
     end 
 	
     config_hash = load_defaults(config_hash)
     self.class.instance_variable_set(:@tagmail_conf, config_hash)
-    #Puppet.info config_hash
+	
     taglists
   end
 
@@ -195,13 +194,15 @@ Puppet::Reports.register_report(:tagmail) do
   # Process the report.  This just calls the other associated messages.
   def process(tagmail_conf_file = "#{Puppet[:confdir]}/tagmail.conf")
     
-    Puppet.notice "STARTING TAGMAIL (#{self.host})"
+    Puppet.notice "Starting tagmail for #{self.host}"
 	
+    #Puppet.notice "Checking for tagmail.conf file"
     unless Puppet::FileSystem.exist?(tagmail_conf_file)
       Puppet.notice "Cannot send tagmail report; no tagmap file #{tagmail_conf_file}"
       return
     end
 
+    #Puppet.notice "Checking metrics"
     metrics = raw_summary || {} rescue {}
     metrics['resources'] = metrics['resources'] || {} rescue {}
     metrics['events'] = metrics['events'] || {} rescue {}
@@ -211,14 +212,26 @@ Puppet::Reports.register_report(:tagmail) do
       return
     end
 
+    #Puppet.notice "Parsing tagmail_conf"
     taglists = parse(File.read(tagmail_conf_file))
 
-    # Now find any appropriately tagged messages.
-    reports = match(taglists)
+    # Continue unless on excluded list 
+    tagmail_conf = self.class.instance_variable_get(:@tagmail_conf)
 
-    send(reports) unless reports.empty?
+    unless tagmail_conf[:excludenode]
+      # Now find any appropriately tagged messages.
+      reports = match(taglists)
+      unless reports.empty?
+        Puppet.notice "Sending tagmail report for #{self.host}"
+        send(reports) 
+      else
+        Puppet.notice "Not sending tagmail report for #{self.host}; reports object is empty"
+      end
+    else
+      Puppet.notice "Not sending tagmail report for #{self.host}; exclusion rule processed"
+    end
 
-    Puppet.notice "ENDING TAGMAIL (#{self.host})"	
+    Puppet.notice "Ending tagmail for #{self.host}"	
   end
 
   # Send the email reports.
