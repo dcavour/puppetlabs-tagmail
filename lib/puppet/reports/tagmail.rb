@@ -3,6 +3,7 @@ require 'pp'
 
 require 'net/smtp'
 require 'time'
+require 'fileutils'
 
 Puppet::Reports.register_report(:tagmail) do
 
@@ -74,9 +75,16 @@ Puppet::Reports.register_report(:tagmail) do
     taglists = []
     config_hash = {}
     file_hash = {}
-
+    
+    lockfilepath = '/tmp'
+    lockfile = "#{lockfilepath}/#{self.host}.lock"
+    
+    interval = 30
+    frequency = 's'
+    
+    config_hash[:lockfile] = {:name => nil, :exists => false, }
     config_hash[:excludenode] = false
-	
+
     input = input.split("\n")
     section = ''
     input.each do |value|
@@ -116,17 +124,65 @@ Puppet::Reports.register_report(:tagmail) do
         array.collect do |value|
           value.strip!
         end
-        if self.host == array[0]
-          config_hash[:noderule] = array[1].to_s
-          if config_hash[:noderule] == '0' || config_hash[:noderule] == 'exclude' 
+        if array[0] == 'lockfile_path'
+          lockfilepath = array[1]
+          lockfile = "#{lockfilepath}/#{self.host}.lock"
+        elsif array[0] == 'report_frequency'
+          interval = array[1].to_i
+          frequency = array[2]
+        elsif array[0] == self.host
+          Puppet.notice "Tagmail rule found for #{array[0]} (#{array[1]})"        
+          if array[1].to_i == 0 || array[1].to_s == 'exclude'
             config_hash[:excludenode] = true
+          else
+            interval = array[1].to_i
+            frequency = array[2]          
           end
-          Puppet.notice "Tagmail rule found for #{array[0]} (#{config_hash[:noderule]})"
-          #Puppet.notice "Matching node found (#{array[0]})\r\nNode rule => #{config_hash[:noderule]}\r\nExclude node => #{config_hash[:excludenode]}"
         end
       end
-    end 
-	
+    end
+   
+    if frequency
+      case frequency.downcase
+        when "s","seconds"
+          delay = interval.to_i
+        when "m","minutes"
+          delay = interval.to_i * 60
+        when "h","hours"
+          delay = interval.to_i * 3600
+        when "d","days"
+          delay = interval.to_i * 86400
+        else
+          delay = interval.to_i * 60      
+      end
+    else
+      delay = 0
+    end
+        
+    if File.exist?(lockfile)
+      config_hash[:lockfile] = {:name => lockfile, :exists => true, :mtime => File.mtime(lockfile),}
+      dtnow = Time.now
+      Puppet.notice "Name      : '#{config_hash[:lockfile][:name]}'"
+      Puppet.notice "Exists    : '#{config_hash[:lockfile][:exists]}'"
+      Puppet.notice "Mtime     : '#{config_hash[:lockfile][:mtime]}'"
+      Puppet.notice "Now       : '#{dtnow.to_s}'"
+      Puppet.notice "Seconds   : '#{(dtnow - config_hash[:lockfile][:mtime]).to_i}'"
+      #Puppet.notice "Interval  : '#{interval}'"
+      #Puppet.notice "frequency : '#{frequency}'"
+      Puppet.notice "Delay     : '#{delay}'"      
+      if (dtnow - config_hash[:lockfile][:mtime]).to_i < delay
+        config_hash[:excludenode] = true
+      else
+        FileUtils.touch config_hash[:lockfile][:name] 
+      end
+      
+    else
+      config_hash[:lockfile] = {:name => lockfile, :exists => false, }
+      Puppet.notice "Name      : '#{config_hash[:lockfile][:name]}'"
+      Puppet.notice "Exists    : '#{config_hash[:lockfile][:exists]}'"
+      FileUtils.touch config_hash[:lockfile][:name]      
+    end        
+       	
     config_hash = load_defaults(config_hash)
     self.class.instance_variable_set(:@tagmail_conf, config_hash)
 	
