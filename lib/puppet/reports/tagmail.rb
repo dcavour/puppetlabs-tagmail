@@ -73,18 +73,15 @@ Puppet::Reports.register_report(:tagmail) do
  # Load the config file
   def parse(input)
     taglists = []
-    config_hash = {}
     file_hash = {}
-    
+    config_hash = {}
+    config_hash[:excludenode] = false
+    config_hash[:lockfile] = {:name => nil, :exists => false, }
     lockfilepath = '/tmp'
     lockfile = "#{lockfilepath}/#{self.host}.lock"
-    
-    interval = 30
+    interval = 0
     frequency = 's'
     
-    config_hash[:lockfile] = {:name => nil, :exists => false, }
-    config_hash[:excludenode] = false
-
     input = input.split("\n")
     section = ''
     input.each do |value|
@@ -118,23 +115,20 @@ Puppet::Reports.register_report(:tagmail) do
     end
 
     if file_hash[:nodeconfig]
-      #Puppet.notice "Processing [nodeconfig] section..."
       file_hash[:nodeconfig].each do |value|
         array = value.split(':')
         array.collect do |value|
           value.strip!
         end
-        if array[0] == 'lockfile_path'
-          lockfilepath = array[1]
+        if array[0] == 'lockfile' && array[1] == 'path'
+          lockfilepath = array[2]
           lockfile = "#{lockfilepath}/#{self.host}.lock"
-        elsif array[0] == 'report_frequency'
-          interval = array[1].to_i
-          frequency = array[2]
-        elsif array[0] == self.host
-          Puppet.notice "Tagmail rule found for #{array[0]} (#{array[1]})"        
+        elsif Regexp.new('^' + array[0].gsub('.','\.').gsub('*','.*') + '$') =~ self.host        
           if array[1].to_i == 0 || array[1].to_s == 'exclude'
+            Puppet.notice "Tagmail nodeconfig crule found for #{self.host} (#{array[0]}:#{array[1]})"          
             config_hash[:excludenode] = true
           else
+            Puppet.notice "Tagmail nodeconfig rule found for #{self.host} (#{array[0]}:#{array[1]}:#{array[2]})"    
             interval = array[1].to_i
             frequency = array[2]          
           end
@@ -144,13 +138,13 @@ Puppet::Reports.register_report(:tagmail) do
    
     if frequency
       case frequency.downcase
-        when "s","seconds"
+        when "s","second","seconds"
           delay = interval.to_i
-        when "m","minutes"
+        when "m","minute","minutes"
           delay = interval.to_i * 60
-        when "h","hours"
+        when "h","hour","hours"
           delay = interval.to_i * 3600
-        when "d","days"
+        when "d","day","days"
           delay = interval.to_i * 86400
         else
           delay = interval.to_i * 60      
@@ -161,15 +155,7 @@ Puppet::Reports.register_report(:tagmail) do
         
     if File.exist?(lockfile)
       config_hash[:lockfile] = {:name => lockfile, :exists => true, :mtime => File.mtime(lockfile),}
-      dtnow = Time.now
-      Puppet.notice "Name      : '#{config_hash[:lockfile][:name]}'"
-      Puppet.notice "Exists    : '#{config_hash[:lockfile][:exists]}'"
-      Puppet.notice "Mtime     : '#{config_hash[:lockfile][:mtime]}'"
-      Puppet.notice "Now       : '#{dtnow.to_s}'"
-      Puppet.notice "Seconds   : '#{(dtnow - config_hash[:lockfile][:mtime]).to_i}'"
-      #Puppet.notice "Interval  : '#{interval}'"
-      #Puppet.notice "frequency : '#{frequency}'"
-      Puppet.notice "Delay     : '#{delay}'"      
+      dtnow = Time.now     
       if (dtnow - config_hash[:lockfile][:mtime]).to_i < delay
         config_hash[:excludenode] = true
       else
@@ -178,8 +164,6 @@ Puppet::Reports.register_report(:tagmail) do
       
     else
       config_hash[:lockfile] = {:name => lockfile, :exists => false, }
-      Puppet.notice "Name      : '#{config_hash[:lockfile][:name]}'"
-      Puppet.notice "Exists    : '#{config_hash[:lockfile][:exists]}'"
       FileUtils.touch config_hash[:lockfile][:name]      
     end        
        	
@@ -249,26 +233,21 @@ Puppet::Reports.register_report(:tagmail) do
 
   # Process the report.  This just calls the other associated messages.
   def process(tagmail_conf_file = "#{Puppet[:confdir]}/tagmail.conf")
-    
-    Puppet.notice "Starting tagmail for #{self.host}"
-	
-    #Puppet.notice "Checking for tagmail.conf file"
+  
     unless Puppet::FileSystem.exist?(tagmail_conf_file)
-      Puppet.notice "Cannot send tagmail report; no tagmap file #{tagmail_conf_file}"
+      Puppet.notice "Cannot send tagmail report for #{self.host}; no tagmap file #{tagmail_conf_file}"
       return
     end
 
-    #Puppet.notice "Checking metrics"
     metrics = raw_summary || {} rescue {}
     metrics['resources'] = metrics['resources'] || {} rescue {}
     metrics['events'] = metrics['events'] || {} rescue {}
 
     if metrics['resources']['out_of_sync'] == 0 && metrics['resources']['changed'] == 0 && metrics['events']['audit'] == nil
-      Puppet.notice "Not sending tagmail report; no changes"
+      Puppet.notice "Not sending tagmail report for #{self.host}; no changes"
       return
     end
 
-    #Puppet.notice "Parsing tagmail_conf"
     taglists = parse(File.read(tagmail_conf_file))
 
     # Continue unless on excluded list 
@@ -281,13 +260,11 @@ Puppet::Reports.register_report(:tagmail) do
         Puppet.notice "Sending tagmail report for #{self.host}"
         send(reports) 
       else
-        Puppet.notice "Not sending tagmail report for #{self.host}; reports object is empty"
+        #Puppet.notice "Not sending tagmail report for #{self.host}; empty report"
       end
     else
-      Puppet.notice "Not sending tagmail report for #{self.host}; exclusion rule processed"
+      Puppet.notice "Not sending tagmail report for #{self.host}; see nodeconfig rules"
     end
-
-    Puppet.notice "Ending tagmail for #{self.host}"	
   end
 
   # Send the email reports.
@@ -298,6 +275,7 @@ Puppet::Reports.register_report(:tagmail) do
     # Starting a new thread has been commented out as it causes conflict with IO.popen, where the thread just dies
     # after the first run.
     #Thread.new {
+    
       if tagmail_conf[:smtpserver] and tagmail_conf[:smtpserver] != "none"
         begin
           Net::SMTP.start(tagmail_conf[:smtpserver], tagmail_conf[:smtpport], tagmail_conf[:smtphelo]) do |smtp|
