@@ -75,6 +75,7 @@ Puppet::Reports.register_report(:tagmail) do
     taglists = []
     file_hash = {}
     config_hash = {}
+    config_hash[:debug] = false    
     config_hash[:excludenode] = false
     config_hash[:lockfile] = {:name => nil, :exists => false, }
     lockfilepath = '/tmp'
@@ -120,15 +121,17 @@ Puppet::Reports.register_report(:tagmail) do
         array.collect do |value|
           value.strip!
         end
-        if array[0] == 'lockfile' && array[1] == 'path'
+        if array[0] == 'debug' && array[1] == 'true'
+          config_hash[:debug] = true 
+        elsif array[0] == 'lockfile' && array[1] == 'path'
           lockfilepath = array[2]
           lockfile = "#{lockfilepath}/#{self.host}.lock"
         elsif Regexp.new('^' + array[0].gsub('.','\.').gsub('*','.*') + '$') =~ self.host        
           if array[1].to_i == 0 || array[1].to_s == 'exclude'
-            Puppet.notice "Tagmail nodeconfig crule found for #{self.host} (#{array[0]}:#{array[1]})"          
+            Puppet.notice "Tagmail nodeconfig crule found for #{self.host} (#{array[0]}:#{array[1]})" if config_hash[:debug]        
             config_hash[:excludenode] = true
           else
-            Puppet.notice "Tagmail nodeconfig rule found for #{self.host} (#{array[0]}:#{array[1]}:#{array[2]})"    
+            Puppet.notice "Tagmail nodeconfig rule found for #{self.host} (#{array[0]}:#{array[1]}:#{array[2]})" if config_hash[:debug]    
             interval = array[1].to_i
             frequency = array[2]          
           end
@@ -257,13 +260,15 @@ Puppet::Reports.register_report(:tagmail) do
       # Now find any appropriately tagged messages.
       reports = match(taglists)
       unless reports.empty?
-        Puppet.notice "Sending tagmail report for #{self.host}"
+        Puppet.notice "Sending tagmail report for #{self.host}" if tagmail_conf[:debug] 
         send(reports) 
       else
-        #Puppet.notice "Not sending tagmail report for #{self.host}; empty report"
+        Puppet.notice "Not sending tagmail report for #{self.host}; empty report" if tagmail_conf[:debug]
+        return        
       end
     else
-      Puppet.notice "Not sending tagmail report for #{self.host}; see nodeconfig rules"
+      Puppet.notice "Not sending tagmail report for #{self.host}; see nodeconfig rules" if tagmail_conf[:debug]
+      return
     end
   end
 
@@ -286,8 +291,6 @@ Puppet::Reports.register_report(:tagmail) do
                 p.puts "To: " + emails.join(", ")
                 p.puts "Date: #{Time.now.rfc2822}"
                 p.puts
-                p.puts "** TESTING NEW TAGMAIL CODE **"
-                p.puts
                 p.puts messages
               end
             end
@@ -305,8 +308,6 @@ Puppet::Reports.register_report(:tagmail) do
               p.puts "From: #{tagmail_conf[:reportfrom]}"
               p.puts "Subject: Puppet Report for #{self.host}"
               p.puts "To: " + emails.join(", ")
-              p.puts
-              p.puts "** TESTING NEW TAGMAIL CODE **"
               p.puts
               p.puts messages
             end
