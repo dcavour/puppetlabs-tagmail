@@ -84,6 +84,7 @@ Puppet's [loglevels](https://docs.puppetlabs.com/references/latest/metaparameter
 
 The above example sends all log messages to `me@example.com`, and all messages from webservers that are not also from mailservers to `httpadmins@example.com` and to `you@example.com`.
 
+## Node Configuration
 If the `debug` key is set to true, additional messages will be output.  The debug key is optional.
 
 If the `lockfilepath` key is specified the lock files will be created in the directory specififed.  If multiple masters are in use, this should point to a network share mounted on each of the masters.  If a single master is in use, the line is optional.
