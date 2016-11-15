@@ -95,7 +95,7 @@ If the `debug` key is set to true, additional messages will be output.  The debu
 
 If the `lockfilepath` key is specified the lock files will be created in the directory specififed.  If multiple masters are in use, this should point to a network share mounted on each of the masters.  If a single master is in use, the line is optional.
 
-The node rules can either be in the format of `node:exclude` or `node:interval:frequency`.  Interval is an integer; frequency can be one of the following:  s|second(s), m|minute(s), h|hour(s), d|day(s).  The exclude option will suppress all reports for the indicated node.  The interval and frequency options are multiplied together to limit how often a node sends reports.  The node will accept the `*` wildcard character.  If a node matches multiple rules, the last maching rule will apply.
+The node rules can either be in the format of `node:exclude` or `node:interval:frequency`.  Interval is an integer; frequency can be one of the following:  s|second(s), m|minute(s), h|hour(s), d|day(s).  The exclude option will suppress all reports for the indicated node.  The interval and frequency options are multiplied together to limit how often a node sends reports.  The node will accept the `*` wildcard character.  Spaces are optional.  If a node matches multiple rules, the last maching rule will apply.
 
 ## Limitations
 
