@@ -78,7 +78,7 @@ Puppet::Reports.register_report(:tagmail) do
     config_hash[:debug] = false    
     config_hash[:excludenode] = false
     config_hash[:lockfile] = {:name => nil, :exists => false, }
-    lockfilepath = '/tmp'
+    lockfilepath = "#{Puppet[:reportdir]}/lockfiles"
     lockfile = "#{lockfilepath}/#{self.host}.lock"
     interval = 0
     frequency = 's'
@@ -123,12 +123,12 @@ Puppet::Reports.register_report(:tagmail) do
         end
         if array[0] == 'debug' && array[1] == 'true'
           config_hash[:debug] = true 
-        elsif array[0] == 'lockfile' && array[1] == 'path'
-          lockfilepath = array[2]
+        elsif array[0] == 'lockfilepath' && array[1] != ''
+          lockfilepath = array[1]
           lockfile = "#{lockfilepath}/#{self.host}.lock"
         elsif Regexp.new('^' + array[0].gsub('.','\.').gsub('*','.*') + '$') =~ self.host        
           if array[1].to_i == 0 || array[1].to_s == 'exclude'
-            Puppet.notice "Tagmail nodeconfig crule found for #{self.host} (#{array[0]}:#{array[1]})" if config_hash[:debug]        
+            Puppet.notice "Tagmail nodeconfig rule found for #{self.host} (#{array[0]}:#{array[1]})" if config_hash[:debug]        
             config_hash[:excludenode] = true
           else
             Puppet.notice "Tagmail nodeconfig rule found for #{self.host} (#{array[0]}:#{array[1]}:#{array[2]})" if config_hash[:debug]    
@@ -155,7 +155,12 @@ Puppet::Reports.register_report(:tagmail) do
     else
       delay = 0
     end
-        
+
+    unless Dir.exist?(lockfilepath)
+      Puppet.notice "Tagmail lockfile directory did not exist!" if config_hash[:debug]
+      FileUtils.mkdir_p lockfilepath
+    end
+      
     if File.exist?(lockfile)
       config_hash[:lockfile] = {:name => lockfile, :exists => true, :mtime => File.mtime(lockfile),}
       dtnow = Time.now     
@@ -164,10 +169,9 @@ Puppet::Reports.register_report(:tagmail) do
       else
         FileUtils.touch config_hash[:lockfile][:name] 
       end
-      
     else
-      config_hash[:lockfile] = {:name => lockfile, :exists => false, }
-      FileUtils.touch config_hash[:lockfile][:name]      
+      config_hash[:lockfile] = {:name => lockfile, :exists => false, }     
+      FileUtils.touch config_hash[:lockfile][:name]
     end        
        	
     config_hash = load_defaults(config_hash)
@@ -252,24 +256,23 @@ Puppet::Reports.register_report(:tagmail) do
     end
 
     taglists = parse(File.read(tagmail_conf_file))
-
-    # Continue unless on excluded list 
+    reports = match(taglists)
     tagmail_conf = self.class.instance_variable_get(:@tagmail_conf)
-
-    unless tagmail_conf[:excludenode]
-      # Now find any appropriately tagged messages.
-      reports = match(taglists)
-      unless reports.empty?
-        Puppet.notice "Sending tagmail report for #{self.host}" if tagmail_conf[:debug] 
-        send(reports) 
+    
+    unless reports.empty?
+      unless tagmail_conf[:excludenode]
+        Puppet.notice "Sending tagmail report for #{self.host}" if tagmail_conf[:debug]
+        send(reports)
       else
-        Puppet.notice "Not sending tagmail report for #{self.host}; empty report" if tagmail_conf[:debug]
-        return        
+        Puppet.notice "Not sending tagmail report for #{self.host}; see nodeconfig rules" if tagmail_conf[:debug]
+        return
       end
     else
-      Puppet.notice "Not sending tagmail report for #{self.host}; see nodeconfig rules" if tagmail_conf[:debug]
-      return
+      Puppet.notice "Not sending tagmail report for #{self.host}; no matching tags" if tagmail_conf[:debug]
+      FileUtils.rm_f tagmail_conf[:lockfile][:name]
+      return    
     end
+    
   end
 
   # Send the email reports.
