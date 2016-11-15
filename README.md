@@ -48,24 +48,13 @@ To configure the tagmail module, edit (or create and edit) the `tagmail.conf` in
 
 `tagmail.conf` is formatted as an ini file and is formatted like so:
 
+###[transport] section
 ~~~
 [transport]
 reportfrom = reports@example.org
 smtpserver = smtp.example.org
 smtpport = 25
 smtphelo = example.org
-
-[tagmap]
-all: me@example.com
-webserver, !mailserver: httpadmins@example.com, you@example.com
-
-[nodeconfig]
-debug: true
-lockfilepath: /tmp/tagmail
-node1.mydomain:exclude
-node2.mydomain:180:minute
-node3.mydomain:12:hour
-*.mydomain:1:day
 ~~~
 
 Instead of specifying `smtpserver`, `smtpport` and `smtphelo`, you can specify the `sendmail` option with a path to your sendmail binary (defaulted to `/usr/sbin/sendmail`). If you do not specify `smtpserver`, tagmail will default to using sendmail.
@@ -76,6 +65,13 @@ reportfrom = reports@example.org
 sendmail = /usr/sbin/sendmail
 ~~~
 
+###[tagmap] section
+~~~
+[tagmap]
+all: me@example.com
+webserver, !mailserver: httpadmins@example.com, you@example.com
+~~~
+
 Each line in the `[tagmap]` section of `tagmail.conf` should include a comma-separated list of tags, a colon, and a comma-separated list of email addresses to receive log messages containing the provided tags.
 
 If you prefix a tag with an exclamation mark, Puppet subtracts any messages with that tag from the line's results.
@@ -84,12 +80,22 @@ Puppet's [loglevels](https://docs.puppetlabs.com/references/latest/metaparameter
 
 The above example sends all log messages to `me@example.com`, and all messages from webservers that are not also from mailservers to `httpadmins@example.com` and to `you@example.com`.
 
-## Node Configuration
+###[nodeconfig] section
+~~~
+[nodeconfig]
+debug: true
+lockfilepath: /tmp/tagmail
+node1.mydomain:exclude
+node2.mydomain:180:minute
+node3.mydomain:12:hour
+*.mydomain:1:day
+~~~
+
 If the `debug` key is set to true, additional messages will be output.  The debug key is optional.
 
 If the `lockfilepath` key is specified the lock files will be created in the directory specififed.  If multiple masters are in use, this should point to a network share mounted on each of the masters.  If a single master is in use, the line is optional.
 
-The node rules can either be in the format of `node:exclude` or `node:interval:frequency`.  Interval is an integer; frequency can be one of the following:  s|second(s), m|minute(s), h|hour(s), d|day(s).  The exclude option will suppress all reports for the indicated node.  The interval and frequency options are multiplied together to limit how often a node send reports.  The node will accept the `*` wildcard character. 
+The node rules can either be in the format of `node:exclude` or `node:interval:frequency`.  Interval is an integer; frequency can be one of the following:  s|second(s), m|minute(s), h|hour(s), d|day(s).  The exclude option will suppress all reports for the indicated node.  The interval and frequency options are multiplied together to limit how often a node sends reports.  The node will accept the `*` wildcard character.  If a node matches multiple rules, the last maching rule will apply.
 
 ## Limitations
 
