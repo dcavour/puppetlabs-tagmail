@@ -58,6 +58,14 @@ smtphelo = example.org
 [tagmap]
 all: me@example.com
 webserver, !mailserver: httpadmins@example.com, you@example.com
+
+[nodeconfig]
+debug: true
+lockfilepath: /tmp/tagmail
+node1.mydomain:exclude
+node2.mydomain:180:minute
+node3.mydomain:12:hour
+node4.mydomain:1:day
 ~~~
 
 Instead of specifying `smtpserver`, `smtpport` and `smtphelo`, you can specify the `sendmail` option with a path to your sendmail binary (defaulted to `/usr/sbin/sendmail`). If you do not specify `smtpserver`, tagmail will default to using sendmail.
