@@ -74,10 +74,6 @@ Instead of specifying `smtpserver`, `smtpport` and `smtphelo`, you can specify t
 [transport]
 reportfrom = reports@example.org
 sendmail = /usr/sbin/sendmail
-
-[tagmap]
-all: me@example.com
-webserver, !mailserver: httpadmins@example.com, you@example.com
 ~~~
 
 Each line in the `[tagmap]` section of `tagmail.conf` should include a comma-separated list of tags, a colon, and a comma-separated list of email addresses to receive log messages containing the provided tags.
@@ -88,6 +84,11 @@ Puppet's [loglevels](https://docs.puppetlabs.com/references/latest/metaparameter
 
 The above example sends all log messages to `me@example.com`, and all messages from webservers that are not also from mailservers to `httpadmins@example.com` and to `you@example.com`.
 
+If the `debug` key is set to true, additional messages will be output.  The debug key is optional.
+
+If the `lockfilepath` key is specified the lock files will be created in the directory specififed.  If multiple masters are in use, this should point to a network share mounted on each of the masters.  If a single master is in use, the line is optional.
+
+The node rules can either be in the format of `node:exclude` or `node:interval:frequency`.  Interval is an integer; frequency can be one of the following:  s|second(s), m|minute(s), h|hour(s), d|day(s).  The exclude option will suppress all reports for the indicated node.  The interval and frequency options are multiplied together to limit how often a node send reports.  The node will accept the `*` wildcard character. 
 
 ## Limitations
 
