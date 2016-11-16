@@ -138,8 +138,9 @@ Puppet::Reports.register_report(:tagmail) do
         end
       end
     end
-
-    if lockfilepath != '' && lockfile != ''    
+ 
+    if lockfilepath != '' && lockfile != ''
+      
       if frequency
         case frequency.downcase
           when "s","second","seconds"
@@ -162,21 +163,23 @@ Puppet::Reports.register_report(:tagmail) do
         FileUtils.mkdir_p lockfilepath
       end
 
-      unless Dir.exist?(lockfilepath)
+      unless Dir.exist?(lockfilepath)        
         Puppet.notice "Tagmail lockfile directory creation failed; check configuration" if config_hash[:debug]
         config_hash[:excludenode] = false
         config_hash[:lockfile] = {:name => nil, :exists => false,}
-      else
-        if File.exist?(lockfile)
-          dtnow = Time.now
-          if (dtnow - config_hash[:lockfile][:mtime]).to_i < delay
+      else    
+        if File.exist?(lockfile)          
+          config_hash[:lockfile] = {:name => lockfile, :exists => true, :mtime => File.mtime(lockfile),}        
+          dtnow = Time.now            
+          if (dtnow - config_hash[:lockfile][:mtime]).to_i < delay 
             config_hash[:excludenode] = true
-          else
-            FileUtils.touch config_hash[:lockfile][:name]
+          else 
+            FileUtils.touch lockfile
           end
-        else
-          FileUtils.touch config_hash[:lockfile][:name]
+        else 
+          FileUtils.touch lockfile
         end
+        
         if File.exist?(lockfile)
           config_hash[:lockfile] = {:name => lockfile, :exists => true, :mtime => File.mtime(lockfile),}
         else
