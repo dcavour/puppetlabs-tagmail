@@ -1,3 +1,8 @@
+## Supported Release 3.0.0
+###Summary
+
+Add support for [nodeconfig] section, which adds report throttling and node exclusion.
+
 ## Supported Release 2.1.1
 ###Summary
 
